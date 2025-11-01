@@ -29,3 +29,11 @@ export async function getResults(runId: string) {
   const res = await fetch(`/results/${runId}`);
   return res.json();
 }
+
+export async function getHistory() {
+  const res = await fetch("/history");
+  if (!res.ok) {
+    throw new Error("Failed to fetch history");
+  }
+  return res.json();
+}

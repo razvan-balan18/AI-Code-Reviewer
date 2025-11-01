@@ -415,6 +415,34 @@ app.get("/results/:runId", async (req, res) => {
   }
 });
 
+app.get("/history", async (req, res) => {
+  try {
+    const runs = await ReviewRun.find()
+      .sort({ createdAt: -1 })
+      .select("runId repoPath mode createdAt summary issues")
+      .lean();
+    
+    // Add computed fields for convenience
+    const runsWithStats = runs.map((run: any) => {
+      const issues = run.issues || [];
+      const files = Array.from(new Set(issues.map((i: any) => i.file).filter(Boolean)));
+      return {
+        ...run,
+        totalIssues: issues.length,
+        highIssues: issues.filter((i: any) => i.severity === "high").length,
+        mediumIssues: issues.filter((i: any) => i.severity === "medium").length,
+        lowIssues: issues.filter((i: any) => i.severity === "low").length,
+        filesAnalyzed: files.length
+      };
+    });
+    
+    res.json(runsWithStats);
+  } catch (e) {
+    console.error("History fetch error:", e);
+    res.status(500).json({ error: "Failed to fetch history" });
+  }
+});
+
 app.listen(config.port, () => {
   console.log(`Server listening on http://localhost:${config.port}`);
 });

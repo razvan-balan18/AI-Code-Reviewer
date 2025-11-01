@@ -14,6 +14,10 @@ export default defineConfig({
       "/results": {
         target: "http://localhost:4000",
         timeout: 10000
+      },
+      "/history": {
+        target: "http://localhost:4000",
+        timeout: 10000
       }
     }
   }
