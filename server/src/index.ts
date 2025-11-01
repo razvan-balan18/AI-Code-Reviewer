@@ -166,7 +166,7 @@ app.post("/review/full", async (req, res) => {
       }
       return all;
     }
-    const files = listFiles(repoPath).slice(0, 30);
+    const files = listFiles(repoPath).slice(0, config.maxFilesInReview || 5);
 
     const prompt = buildFullReviewPrompt(repoPath, files, findings);
     let parsed: any = { issues: [], summary: "Review completed" };

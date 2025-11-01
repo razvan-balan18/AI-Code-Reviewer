@@ -86,8 +86,24 @@ export function tryParseJsonWithFallback(jsonStr: string): { success: boolean; d
     
     // Try to fix common JSON issues
     try {
-      // Fix trailing commas
-      let fixed = jsonStr.replace(/,(\s*[}\]])/g, '$1');
+      let fixed = jsonStr;
+      
+      // Fix 1: Remove trailing commas before closing braces/brackets
+      fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+      
+      // Fix 2: Add missing commas between array/object elements
+      // Pattern: } followed by { without comma (missing comma between objects)
+      fixed = fixed.replace(/}\s*{/g, '}, {');
+      // Pattern: ] followed by [ without comma (missing comma between arrays - less common)
+      fixed = fixed.replace(/\]\s*\[/g, '], [');
+      
+      // Fix 3: Add missing commas after object/array literals before new object/array
+      // Pattern: } or ] followed by whitespace and then { or [
+      fixed = fixed.replace(/([}\]"])\s+([{\[])/g, '$1, $2');
+      
+      // Fix 4: Handle missing commas in arrays (object} followed by {)
+      fixed = fixed.replace(/(}\s*)({)/g, '$1, $2');
+      
       const parsed = JSON.parse(fixed);
       return { success: true, data: parsed };
     } catch (e2: any) {
@@ -96,7 +112,14 @@ export function tryParseJsonWithFallback(jsonStr: string): { success: boolean; d
         const firstBrace = jsonStr.indexOf('{');
         const lastBrace = jsonStr.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace !== -1) {
-          const extracted = jsonStr.substring(firstBrace, lastBrace + 1);
+          let extracted = jsonStr.substring(firstBrace, lastBrace + 1);
+          
+          // Apply the same fixes to extracted JSON
+          extracted = extracted.replace(/,(\s*[}\]])/g, '$1');
+          extracted = extracted.replace(/}\s*{/g, '}, {');
+          extracted = extracted.replace(/([}\]"])\s+([{\[])/g, '$1, $2');
+          extracted = extracted.replace(/(}\s*)({)/g, '$1, $2');
+          
           const parsed = JSON.parse(extracted);
           return { success: true, data: parsed };
         }
@@ -127,13 +150,14 @@ export function callOllama(prompt: string): string {
     
     if (proc.error) {
       console.error("Ollama spawn error:", proc.error);
-      if (proc.error.code === 'ETIMEDOUT') {
+      const error = proc.error as NodeJS.ErrnoException;
+      if (error.code === 'ETIMEDOUT') {
         throw new Error(`Ollama request timed out after ${config.ollamaTimeout}ms. The model may be too slow or the prompt too long. Try a smaller model or reduce the code being reviewed.`);
       }
-      if (proc.error.code === 'ENOENT') {
+      if (error.code === 'ENOENT') {
         throw new Error(`Ollama not found. Please ensure Ollama is installed and available in your PATH.`);
       }
-      throw new Error(`Failed to run Ollama: ${proc.error.message}`);
+      throw new Error(`Failed to run Ollama: ${error.message}`);
     }
     
     if (proc.status !== 0) {
