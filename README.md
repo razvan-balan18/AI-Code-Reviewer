@@ -1,5 +1,7 @@
 AI‑Powered Code Reviewer (MERN + Local LLM)
+---
 Haufe Group Hackathon 2025
+---
 Balan Razvan
 
 An **AI‑powered code review assistant** built with the **MERN stack** (MongoDB, Express, React, Node.js) and integrated with **Ollama** for local Large Language Model (LLM) inference.  
